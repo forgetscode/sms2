@@ -19,6 +19,9 @@ pub mod sms2 {
         chat_initializer.chat_id = chat_id;
         chat_receiver.chat_id = chat_id;
 
+        chat_initializer.bump = *ctx.bumps.get("chat_initializer").unwrap();
+        chat_receiver.bump = *ctx.bumps.get("chat_receiver").unwrap();
+
         Ok(())
     }
 }
@@ -29,13 +32,17 @@ pub struct InitializeChat<'info>  {
     #[account(
         init,
         payer = initializer,
-        space = 8 + 32 + 32 + 1,
+        space = 8 + 32 + 32 + 1 + 1,
+        seeds = [b"chat_initializer", initializer.key().as_ref()], 
+        bump,
     )]
     pub chat_initializer: Account<'info, Chat>,
     #[account(
         init,
         payer = initializer,
-        space = 8 + 32 + 32 + 1,
+        space = 8 + 32 + 32 + 1 + 1,
+        seeds = [b"chat_receiver", receiver.key().as_ref()], 
+        bump,
     )]
     pub chat_receiver: Account<'info, Chat>,
 
@@ -50,5 +57,6 @@ pub struct InitializeChat<'info>  {
 pub struct Chat {         //8
     initializer: Pubkey,  //32
     receiver: Pubkey,     //32
-    chat_id: u8
+    chat_id: u8,          //1
+    bump: u8              //1
 }
