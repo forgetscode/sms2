@@ -104,6 +104,27 @@ describe("sms2", () => {
     return index
   }
 
+  const initializeChatDynamic = async(initializer:anchor.web3.Keypair, receiver:PublicKey) => {
+    const indexInitializer = await getIndexInitializer(initializer.publicKey) + 1;
+    const indexReceiver = await getIndexReceiver(receiver) + 1;
+
+    const initializerChat = await GetPDAInitializer(initializer.publicKey, indexInitializer);
+    const receiverChat = await GetPDAReceiver(receiver, indexReceiver);
+
+    const tx = await program.methods.initializeChat(indexInitializer, indexReceiver)
+    .accounts(
+      {
+        chatInitializer: initializerChat,
+        chatReceiver: receiverChat,
+        initializer: initializer.publicKey,
+        receiver: receiver,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    ).signers([initializer]).rpc();
+
+    return tx;
+  }
+
 
 
   it("Is initialized!", async () => {
@@ -131,60 +152,9 @@ describe("sms2", () => {
 
     console.log(tx2);
 
-    const indexInitializer = await getIndexInitializer(pair1[1].publicKey);
+    const tx3 = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
 
-    console.log(indexInitializer);
+    console.log(tx3);
 
-    
-    const indexReceiver= await getIndexReceiver(pair1[1].publicKey);
-
-    console.log(indexReceiver);
-
-    /*
-    const tx = await program.methods.initializeChat(1)
-    .accounts(
-      {
-        chatInitializer: chat_initializer,
-        chatReceiver: chat_receiver,
-        initializer: initializer.publicKey,
-        receiver: receiver.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      },
-    ).signers([initializer]).rpc();
-
-    let messagedata = await program.account.chat.fetch(chat_initializer);
-    console.log("message data", messagedata);
-
-    const [chat_initializer_2, _2 ] = await PublicKey.findProgramAddress(
-      [
-        anchor.utils.bytes.utf8.encode('chat_initializer'),
-        receiver.publicKey.toBuffer(),
-      ],
-      program.programId
-    )
-
-    const [chat_receiver_2, __2] = await PublicKey.findProgramAddress(
-      [
-        anchor.utils.bytes.utf8.encode('chat_receiver'),
-        initializer.publicKey.toBuffer(),
-      ],
-      program.programId
-    )
-
-
-    const tx2 = await program.methods.initializeChat(2)
-    .accounts(
-      {
-        chatInitializer: chat_initializer_2,
-        chatReceiver: chat_receiver_2,
-        initializer: receiver.publicKey,
-        receiver: initializer.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      },
-    ).signers([receiver]).rpc();
-
-
-    console.log("Your transaction signature", tx);
-    */
   });
 });
