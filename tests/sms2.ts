@@ -10,12 +10,11 @@ describe("sms2", () => {
   const program = anchor.workspace.Sms2 as Program<Sms2>;
 
   
-  const receiver = anchor.web3.Keypair.generate();
+  const genAccPair = async() => {
+    const receiver = anchor.web3.Keypair.generate();
 
-  const initializer = anchor.web3.Keypair.generate();
+    const initializer = anchor.web3.Keypair.generate();
 
-  it("Is initialized!", async () => {
-    // Add your test here.
     await program.provider.connection.confirmTransaction(
       await program.provider.connection.requestAirdrop(initializer.publicKey, 10000000000),
       "confirmed"
@@ -26,26 +25,81 @@ describe("sms2", () => {
       "confirmed"
     );
 
+    return [initializer, receiver]
+  }
+
+
+  const GetPDAInitializer = async(initializer:PublicKey, chat_id:number) => {
+
     const [chat_initializer, _ ] = await PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode('chat_initializer'),
-        initializer.publicKey.toBuffer(),
+        initializer.toBuffer(),
+        Buffer.from([chat_id]),
       ],
       program.programId
     )
 
-    const [chat_receiver, __] = await PublicKey.findProgramAddress(
+    return chat_initializer;
+  }
+
+  const GetPDAReceiver = async(receiver:PublicKey, chat_id:number) => {
+
+    const [chat_receiver, _ ] = await PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode('chat_receiver'),
-        receiver.publicKey.toBuffer(),
+        receiver.toBuffer(),
+        Buffer.from([chat_id]),
       ],
       program.programId
     )
 
-    console.log("tony the tiger says you're great!");
+    return chat_receiver;
+  }
+  
+
+  const initializeChat = async(initializer:anchor.web3.Keypair, receiver:PublicKey, initializerChat:PublicKey, receiverChat:PublicKey, chatIdInitializer:number, chatIdReceiver:number) => {
+      const tx = await program.methods.initializeChat(chatIdInitializer, chatIdReceiver)
+      .accounts(
+        {
+          chatInitializer: initializerChat,
+          chatReceiver: receiverChat,
+          initializer: initializer.publicKey,
+          receiver: receiver,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        },
+      ).signers([initializer]).rpc();
+
+      return tx;
+  }
 
 
-    const tx = await program.methods.initializeChat(8)
+
+
+  it("Is initialized!", async () => {
+
+    const pair1 = await genAccPair();
+
+    const pair2 = await genAccPair();
+
+    const pair1_initializer_chat1 = await GetPDAInitializer(pair1[0].publicKey, 1);
+
+    const pair1_receiver_chat1 = await GetPDAReceiver(pair1[1].publicKey, 1);
+
+    const pair2_initializer_chat1 = await GetPDAInitializer(pair2[0].publicKey, 1);
+
+    const pair1_receiver_chat2 = await GetPDAReceiver(pair1[1].publicKey, 2);
+
+
+    const tx = await initializeChat(pair1[0], pair1[1].publicKey, pair1_initializer_chat1, pair1_receiver_chat1, 1, 1);
+
+    console.log(tx);
+
+
+    const tx2 = await initializeChat(pair2[0], pair1[1].publicKey, pair2_initializer_chat1, pair1_receiver_chat2, 1, 2);
+
+    console.log(tx2);
+
+    /*
+    const tx = await program.methods.initializeChat(1)
     .accounts(
       {
         chatInitializer: chat_initializer,
@@ -59,6 +113,36 @@ describe("sms2", () => {
     let messagedata = await program.account.chat.fetch(chat_initializer);
     console.log("message data", messagedata);
 
+    const [chat_initializer_2, _2 ] = await PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode('chat_initializer'),
+        receiver.publicKey.toBuffer(),
+      ],
+      program.programId
+    )
+
+    const [chat_receiver_2, __2] = await PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode('chat_receiver'),
+        initializer.publicKey.toBuffer(),
+      ],
+      program.programId
+    )
+
+
+    const tx2 = await program.methods.initializeChat(2)
+    .accounts(
+      {
+        chatInitializer: chat_initializer_2,
+        chatReceiver: chat_receiver_2,
+        initializer: receiver.publicKey,
+        receiver: initializer.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    ).signers([receiver]).rpc();
+
+
     console.log("Your transaction signature", tx);
+    */
   });
 });
