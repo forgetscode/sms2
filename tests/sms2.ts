@@ -33,6 +33,7 @@ describe("sms2", () => {
 
     const [chat_initializer, _ ] = await PublicKey.findProgramAddress(
       [
+        anchor.utils.bytes.utf8.encode("chat_initializer"),
         initializer.toBuffer(),
         Buffer.from([chat_id]),
       ],
@@ -46,6 +47,7 @@ describe("sms2", () => {
 
     const [chat_receiver, _ ] = await PublicKey.findProgramAddress(
       [
+        anchor.utils.bytes.utf8.encode("chat_receiver"),
         receiver.toBuffer(),
         Buffer.from([chat_id]),
       ],
@@ -72,6 +74,36 @@ describe("sms2", () => {
   }
 
 
+  const getIndexInitializer = async(account:PublicKey) => {
+    let index = 0;
+    for (let i = 1; i < 7; i++) { 
+      let cursor = await GetPDAInitializer(account, i);
+      try{
+        let data = await program.account.chat.fetch(cursor);
+      }
+      catch{
+        index = i -1;
+        break
+      }
+    }
+    return index
+  }
+
+  const getIndexReceiver = async(account:PublicKey) => {
+    let index = 0;
+    for (let i = 1; i < 7; i++) { 
+      let cursor = await GetPDAReceiver(account, i);
+      try{
+        let data = await program.account.chat.fetch(cursor);
+      }
+      catch{
+        index = i - 1;
+        break
+      }
+    }
+    return index
+  }
+
 
 
   it("Is initialized!", async () => {
@@ -88,6 +120,7 @@ describe("sms2", () => {
 
     const pair1_receiver_chat2 = await GetPDAReceiver(pair1[1].publicKey, 2);
 
+    const pair1_initializer_chat2 = await GetPDAInitializer(pair1[0].publicKey, 2);
 
     const tx = await initializeChat(pair1[0], pair1[1].publicKey, pair1_initializer_chat1, pair1_receiver_chat1, 1, 1);
 
@@ -97,6 +130,15 @@ describe("sms2", () => {
     const tx2 = await initializeChat(pair2[0], pair1[1].publicKey, pair2_initializer_chat1, pair1_receiver_chat2, 1, 2);
 
     console.log(tx2);
+
+    const indexInitializer = await getIndexInitializer(pair1[1].publicKey);
+
+    console.log(indexInitializer);
+
+    
+    const indexReceiver= await getIndexReceiver(pair1[1].publicKey);
+
+    console.log(indexReceiver);
 
     /*
     const tx = await program.methods.initializeChat(1)
