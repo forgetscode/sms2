@@ -23,6 +23,9 @@ pub mod sms2 {
         chat_initializer.chat_id = chat_id_initializer;
         chat_receiver.chat_id = chat_id_receiver;
 
+        chat_initializer.other_chat_id = chat_id_receiver;
+        chat_receiver.other_chat_id = chat_id_initializer;
+
         chat_initializer.message_count = 0;
         chat_receiver.message_count = 0;
         
@@ -59,7 +62,7 @@ pub struct InitializeChat<'info>  {
     #[account(
         init,
         payer = initializer,
-        space = 8 + 32 + 32 + 32 + 1 + 1 + 1,
+        space = 8 + 32 + 32 + 32 + 1 + 1 + 1 + 1,
         constraint = initializer.key() != receiver.key(),
         seeds = [b"chat_initializer", initializer.key().as_ref(), chat_id_initializer.to_le_bytes().as_ref()], 
         bump
@@ -68,7 +71,7 @@ pub struct InitializeChat<'info>  {
     #[account(
         init,
         payer = initializer,
-        space = 8 + 32 + 32 + 32 + 1 + 1 + 1,
+        space = 8 + 32 + 32 + 32 + 1 + 1 + 1 + 1,
         constraint = initializer.key() != receiver.key(),
         seeds = [b"chat_receiver", receiver.key().as_ref(), chat_id_receiver.to_le_bytes().as_ref()], 
         bump
@@ -122,6 +125,7 @@ pub struct Chat {          //8
     receiver: Pubkey,      //32
     master_id: Pubkey,     //32
     chat_id: u8,           //1
+    other_chat_id: u8,     //1
     message_count: u8,     //1
     bump:u8,               //1
 }
@@ -141,7 +145,7 @@ impl Message {
 
 #[account]
 pub struct Message {
-    message: String,       //252 max
+    message: String,       //221 max
     initializer:Pubkey,    //32
     bump: u8,              //1
 }

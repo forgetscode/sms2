@@ -189,11 +189,17 @@ describe("sms2", () => {
     let chat_master_id = data.masterId;
     let chat_message_count = data.messageCount;
 
+    //send message with chat account and user
+
+    //send message, get messages
+
+    /*
     const message1 = await GetPDAMessage(chat_master_id, chat_message_count);
 
     let data2 = await program.account.message.fetch(message1);
 
     console.log(data2);
+    */
 
   });
 });
