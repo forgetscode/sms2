@@ -28,7 +28,6 @@ describe("sms2", () => {
     return [initializer, receiver]
   }
 
-
   const GetPDAInitializer = async(initializer:PublicKey, chat_id:number) => {
 
     const [chat_initializer, _ ] = await PublicKey.findProgramAddress(
@@ -57,9 +56,9 @@ describe("sms2", () => {
     return chat_receiver;
   }
   
-
   const initializeChat = async(initializer:anchor.web3.Keypair, receiver:PublicKey, initializerChat:PublicKey, receiverChat:PublicKey, chatIdInitializer:number, chatIdReceiver:number) => {
-      const tx = await program.methods.initializeChat(chatIdInitializer, chatIdReceiver)
+      const master_id = anchor.web3.Keypair.generate();
+      const tx = await program.methods.initializeChat(chatIdInitializer, chatIdReceiver, master_id.publicKey)
       .accounts(
         {
           chatInitializer: initializerChat,
@@ -72,7 +71,6 @@ describe("sms2", () => {
 
       return tx;
   }
-
 
   const getIndexInitializer = async(account:PublicKey) => {
     let index = 0;
@@ -111,7 +109,9 @@ describe("sms2", () => {
     const initializerChat = await GetPDAInitializer(initializer.publicKey, indexInitializer);
     const receiverChat = await GetPDAReceiver(receiver, indexReceiver);
 
-    const tx = await program.methods.initializeChat(indexInitializer, indexReceiver)
+    const master_id = anchor.web3.Keypair.generate();
+
+    const tx = await program.methods.initializeChat(indexInitializer, indexReceiver, master_id.publicKey)
     .accounts(
       {
         chatInitializer: initializerChat,
@@ -146,7 +146,6 @@ describe("sms2", () => {
     const tx = await initializeChat(pair1[0], pair1[1].publicKey, pair1_initializer_chat1, pair1_receiver_chat1, 1, 1);
 
     console.log(tx);
-
 
     const tx2 = await initializeChat(pair2[0], pair1[1].publicKey, pair2_initializer_chat1, pair1_receiver_chat2, 1, 2);
 
