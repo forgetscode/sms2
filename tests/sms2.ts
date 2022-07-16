@@ -55,6 +55,20 @@ describe("sms2", () => {
 
     return chat_receiver;
   }
+
+  const GetPDAMessage = async(master_id:PublicKey, message_id:number) => {
+
+    const [ message, _ ] = await PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode("message"),
+        master_id.toBuffer(),
+        Buffer.from([message_id]),
+      ],
+      program.programId
+    )
+
+    return message;
+  }
   
   const initializeChat = async(initializer:anchor.web3.Keypair, receiver:PublicKey, initializerChat:PublicKey, receiverChat:PublicKey, chatIdInitializer:number, chatIdReceiver:number) => {
       const master_id = anchor.web3.Keypair.generate();
@@ -71,6 +85,23 @@ describe("sms2", () => {
 
       return tx;
   }
+
+  const initializeMessage = async( initializer:anchor.web3.Keypair, receiver:PublicKey, initializerChat:PublicKey, receiverChat:PublicKey, message_id: PublicKey, chat_master_id:PublicKey, chat_message_count:number, text:string) => {
+    const tx = await program.methods.initializeMessage(chat_master_id, chat_message_count, text)
+    .accounts(
+      {
+        message: message_id,
+        chatInitializer: initializerChat,
+        chatReceiver: receiverChat,
+        initializer: initializer.publicKey,
+        receiver: receiver,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    ).signers([initializer]).rpc();
+
+    return tx;
+  }
+
 
   const getIndexInitializer = async(account:PublicKey) => {
     let index = 0;
@@ -122,7 +153,7 @@ describe("sms2", () => {
       },
     ).signers([initializer]).rpc();
 
-    return tx;
+    return [initializerChat, receiverChat];
   }
 
 
@@ -151,9 +182,18 @@ describe("sms2", () => {
 
     console.log(tx2);
 
-    const tx3 = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
+    const chat_accounts = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
 
-    console.log(tx3);
+    let data = await program.account.chat.fetch(chat_accounts[0]);
+
+    let chat_master_id = data.masterId;
+    let chat_message_count = data.messageCount;
+
+    const message1 = await GetPDAMessage(chat_master_id, chat_message_count);
+
+    let data2 = await program.account.message.fetch(message1);
+
+    console.log(data2);
 
   });
 });

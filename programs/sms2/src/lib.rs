@@ -97,15 +97,6 @@ pub struct InitializeMessage<'info>  {
     pub receiver: SystemAccount<'info>,
     #[account(
         mut,
-        constraint = initializer.key() == chat_receiver.initializer.key() || 
-        initializer.key() == chat_receiver.receiver.key(),
-        constraint = receiver.key() == chat_receiver.initializer.key() || 
-        receiver.key() == chat_receiver.receiver.key(),
-        constraint = initializer.key() != receiver.key()
-    )]
-    pub chat_receiver: Account<'info, Chat>,
-    #[account(
-        mut,
         constraint = initializer.key() == chat_initializer.initializer.key() || 
         initializer.key() == chat_initializer.receiver.key(),
         constraint = receiver.key() == chat_initializer.initializer.key() || 
@@ -113,6 +104,15 @@ pub struct InitializeMessage<'info>  {
         constraint = initializer.key() != receiver.key()
     )]
     pub chat_initializer: Account<'info, Chat>,
+    #[account(
+        mut,
+        constraint = initializer.key() == chat_receiver.initializer.key() || 
+        initializer.key() == chat_receiver.receiver.key(),
+        constraint = receiver.key() == chat_receiver.initializer.key() || 
+        receiver.key() == chat_receiver.receiver.key(),
+        constraint = initializer.key() != receiver.key()
+    )]
+    pub chat_receiver: Account<'info, Chat>,
     pub system_program: Program<'info, System>
 }
 
