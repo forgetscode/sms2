@@ -81,22 +81,6 @@ describe("sms2", () => {
 
     return message;
   }
-  
-  const initializeChat = async(initializer:anchor.web3.Keypair, receiver:PublicKey, initializerChat:PublicKey, receiverChat:PublicKey, chatIdInitializer:number, chatIdReceiver:number) => {
-      const master_id = anchor.web3.Keypair.generate();
-      const tx = await program.methods.initializeChat(chatIdInitializer, chatIdReceiver, master_id.publicKey)
-      .accounts(
-        {
-          chatInitializer: initializerChat,
-          chatReceiver: receiverChat,
-          initializer: initializer.publicKey,
-          receiver: receiver,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        },
-      ).signers([initializer]).rpc();
-
-      return tx;
-  }
 
   const getIndexInitializer = async(account:PublicKey) => {
     let index = 0;
@@ -250,29 +234,30 @@ describe("sms2", () => {
     /////////////////////////////////////////////////////////////////////////////////
     const pair1 = await genAccPair();
 
-    const pair2 = await genAccPair();
-
-    const pair1_initializer_chat1 = await GetPDAInitializer(pair1[0].publicKey, 1);
-
-    const pair1_receiver_chat1 = await GetPDAReceiver(pair1[1].publicKey, 1);
-
-    const pair2_initializer_chat1 = await GetPDAInitializer(pair2[0].publicKey, 1);
-
-    const pair1_receiver_chat2 = await GetPDAReceiver(pair1[1].publicKey, 2);
-
-    const pair1_initializer_chat2 = await GetPDAInitializer(pair1[0].publicKey, 2);
+    const user1 = pair1[0];
+    const user2 = pair1[1];
 
     //test create chat send 2 messages
 
-    const tx = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
+    //initialize chat between user 1 and user 2
+    const tx = await initializeChatDynamic(user1, user2.publicKey);
 
-    let account_chats = await getAccountChats(pair2[0].publicKey);
+    //get chat accounts for user 1  and 2(unnecessary but shown for comprehension)
+    let account_chats = await getAccountChats(user1.publicKey);
+    let account_chats2 = await getAccountChats(user2.publicKey);
 
-    const tx2 = await initializeMessage(account_chats[0], pair2[0], "boop");
+    //these are both the same
+    let user1_first_chat = account_chats[0]
+    let user2_first_chat = account_chats2[0]
 
-    const tx3 = await initializeMessage(account_chats[0], pair2[1], "boooop");
+    //initialize message in first chat from user 1 from pair 2's chat accounts
+    const tx2 = await initializeMessage(user1_first_chat, user1, "boop");
 
-    const messages = await getMessagesByChat(account_chats[0]);
+    //...
+    const tx3 = await initializeMessage(user2_first_chat, user2, "boooop back to you");
+
+    //Get messages from the chat
+    const messages = await getMessagesByChat(user1_first_chat);
 
     console.log(messages);
 
