@@ -3,6 +3,18 @@ import { Program } from "@project-serum/anchor";
 import { Sms2 } from "../target/types/sms2";
 import { PublicKey } from '@solana/web3.js'
 
+
+interface ChatAccount {
+  initializer:PublicKey,
+  receiver:PublicKey,
+  masterId:PublicKey,
+  chatId:number,
+  otherChatId:number,
+  messageCount:number,
+  bump:number,
+}
+
+
 describe("sms2", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
@@ -85,23 +97,6 @@ describe("sms2", () => {
 
       return tx;
   }
-
-  const initializeMessage = async( initializer:anchor.web3.Keypair, receiver:PublicKey, initializerChat:PublicKey, receiverChat:PublicKey, message_id: PublicKey, chat_master_id:PublicKey, chat_message_count:number, text:string) => {
-    const tx = await program.methods.initializeMessage(chat_master_id, chat_message_count, text)
-    .accounts(
-      {
-        message: message_id,
-        chatInitializer: initializerChat,
-        chatReceiver: receiverChat,
-        initializer: initializer.publicKey,
-        receiver: receiver,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      },
-    ).signers([initializer]).rpc();
-
-    return tx;
-  }
-
 
   const getIndexInitializer = async(account:PublicKey) => {
     let index = 0;
@@ -193,6 +188,41 @@ describe("sms2", () => {
     return [initializerChat, receiverChat];
   }
 
+  const initializeMessage = async( chatAccount:ChatAccount, initializer:anchor.web3.Keypair, text:string ) => {
+    let initializerChat:PublicKey;
+    let receiverChat:PublicKey;
+    let receiver:PublicKey;
+
+    if (initializer.publicKey.toBase58() == chatAccount.initializer.toBase58()){
+      initializerChat = await GetPDAInitializer(chatAccount.initializer, chatAccount.chatId);
+      receiverChat = await GetPDAReceiver(chatAccount.receiver, chatAccount.otherChatId);
+      receiver = chatAccount.receiver;
+    }
+    
+    else{
+      initializerChat = await GetPDAReceiver(chatAccount.receiver, chatAccount.chatId);
+      receiverChat = await GetPDAInitializer(chatAccount.initializer, chatAccount.otherChatId);
+      receiver = chatAccount.initializer;
+    }
+    
+    const message_id = await GetPDAMessage(chatAccount.masterId, chatAccount.messageCount);
+
+    const tx = await program.methods.initializeMessage(chatAccount.masterId, chatAccount.messageCount, text)
+    .accounts(
+      {
+        message: message_id,
+        chatInitializer: initializerChat,
+        chatReceiver: receiverChat,
+        initializer: initializer.publicKey,
+        receiver: receiver,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    ).signers([initializer]).rpc();
+
+    return tx;
+    
+  }
+
   const loadChats = async(account:PublicKey) =>{
     const indexInitializer = await getIndexInitializer(account) + 1;
     const indexReceiver = await getIndexReceiver(account) + 1;
@@ -216,37 +246,15 @@ describe("sms2", () => {
     const pair1_receiver_chat2 = await GetPDAReceiver(pair1[1].publicKey, 2);
 
     const pair1_initializer_chat2 = await GetPDAInitializer(pair1[0].publicKey, 2);
-    ////////////////////////////////////////////////////////////////////////////////
 
-    const tx = await initializeChat(pair1[0], pair1[1].publicKey, pair1_initializer_chat1, pair1_receiver_chat1, 1, 1);
+    const tx = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
 
-    console.log(tx);
+    const account_chats = await getAccountChats(pair2[0].publicKey);
 
-    const tx2 = await initializeChat(pair2[0], pair1[1].publicKey, pair2_initializer_chat1, pair1_receiver_chat2, 1, 2);
+    const tx2 = await initializeMessage(account_chats[0], pair2[0], "boop");
 
-    console.log(tx2);
-
-    ////////////////////////////////////////////////////////////////////////////////
-    
-
-    const chat_accounts = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
-
-    //chat data retrieved
-    let data = await program.account.chat.fetch(chat_accounts[0]);
-
-    let chat_master_id = data.masterId;
-    let chat_message_count = data.messageCount;
-
-    const message1 = await GetPDAMessage(chat_master_id, chat_message_count);
-
-    const charts = await getAccountChats(pair2[0].publicKey);
-
-    //send message with chat account and user
-
-    //send message, get messages
 
     /*
-    const message1 = await GetPDAMessage(chat_master_id, chat_message_count);
 
     let data2 = await program.account.message.fetch(message1);
 
