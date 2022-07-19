@@ -175,7 +175,6 @@ describe("sms2", () => {
       try{
         let messagePDA = await GetPDAMessage(chatAccount.masterId, i);
         let messageData = await program.account.message.fetch(messagePDA);
-        console.log("message data:", messageData);
         data.push(messageData);
       }
       catch{
@@ -263,30 +262,19 @@ describe("sms2", () => {
 
     const pair1_initializer_chat2 = await GetPDAInitializer(pair1[0].publicKey, 2);
 
+    //test create chat send 2 messages
+
     const tx = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
 
     let account_chats = await getAccountChats(pair2[0].publicKey);
 
     const tx2 = await initializeMessage(account_chats[0], pair2[0], "boop");
 
-    const tx3 = await initializeMessage(account_chats[0], pair2[0], "boooop");
+    const tx3 = await initializeMessage(account_chats[0], pair2[1], "boooop");
 
-    const tx4 = await initializeMessage(account_chats[0], pair2[0], "boooop");
-
-    const tx5 = await initializeMessage(account_chats[0], pair2[0], "boooop");
-
-    const tx6 = await initializeMessage(account_chats[0], pair2[0], "boooop");
-    
     const messages = await getMessagesByChat(account_chats[0]);
 
     console.log(messages);
-
-    /*
-
-    let data2 = await program.account.message.fetch(message1);
-
-    console.log(data2);
-    */
 
   });
 });
