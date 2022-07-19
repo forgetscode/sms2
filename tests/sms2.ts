@@ -28,7 +28,7 @@ describe("sms2", () => {
     const initializer = anchor.web3.Keypair.generate();
 
     await program.provider.connection.confirmTransaction(
-      await program.provider.connection.requestAirdrop(initializer.publicKey, 10000000000),
+      await program.provider.connection.requestAirdrop(initializer.publicKey, 1000000000000),
       "confirmed"
     );
 
@@ -133,8 +133,8 @@ describe("sms2", () => {
     for (let i = 1; i < 7; i++) { 
       let cursor = await GetPDAInitializer(account, i);
       try{
-        let data = await program.account.chat.fetch(cursor);
-        InitializerChats.push(data);
+         await program.account.chat.fetch(cursor);
+        InitializerChats.push(cursor);
       }
       catch{
         continue
@@ -148,8 +148,8 @@ describe("sms2", () => {
     for (let i = 1; i < 7; i++) { 
       let cursor = await GetPDAReceiver(account, i);
       try{
-        let data = await program.account.chat.fetch(cursor);
-        receiverChats.push(data);
+        await program.account.chat.fetch(cursor);
+        receiverChats.push(cursor);
       }
       catch{
         continue
@@ -163,6 +163,27 @@ describe("sms2", () => {
     const ReceiverChats = await getReceiverChats(account);
 
     return initializeChats.concat(ReceiverChats);
+  }
+
+  const getMessagesByChat = async(chatAccountPDA:PublicKey) => {
+
+    const chatAccount = await program.account.chat.fetch(chatAccountPDA);
+
+    const data = [];
+
+    for (let i=0; i <= chatAccount.messageCount; i++){
+      try{
+        let messagePDA = await GetPDAMessage(chatAccount.masterId, i);
+        let messageData = await program.account.message.fetch(messagePDA);
+        console.log("message data:", messageData);
+        data.push(messageData);
+      }
+      catch{
+        continue;
+      }
+    }
+    
+    return data
   }
 
   const initializeChatDynamic = async(initializer:anchor.web3.Keypair, receiver:PublicKey) => {
@@ -185,13 +206,15 @@ describe("sms2", () => {
       },
     ).signers([initializer]).rpc();
 
-    return [initializerChat, receiverChat];
+    return tx;
   }
 
-  const initializeMessage = async( chatAccount:ChatAccount, initializer:anchor.web3.Keypair, text:string ) => {
+  const initializeMessage = async( chatAccountPDA:PublicKey, initializer:anchor.web3.Keypair, text:string ) => {
     let initializerChat:PublicKey;
     let receiverChat:PublicKey;
     let receiver:PublicKey;
+
+    const chatAccount = await program.account.chat.fetch(chatAccountPDA);
 
     if (initializer.publicKey.toBase58() == chatAccount.initializer.toBase58()){
       initializerChat = await GetPDAInitializer(chatAccount.initializer, chatAccount.chatId);
@@ -223,13 +246,6 @@ describe("sms2", () => {
     
   }
 
-  const loadChats = async(account:PublicKey) =>{
-    const indexInitializer = await getIndexInitializer(account) + 1;
-    const indexReceiver = await getIndexReceiver(account) + 1;
-  }
-
-
-
   it("Is initialized!", async () => {
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -249,10 +265,21 @@ describe("sms2", () => {
 
     const tx = await initializeChatDynamic(pair2[0], pair2[1].publicKey);
 
-    const account_chats = await getAccountChats(pair2[0].publicKey);
+    let account_chats = await getAccountChats(pair2[0].publicKey);
 
     const tx2 = await initializeMessage(account_chats[0], pair2[0], "boop");
 
+    const tx3 = await initializeMessage(account_chats[0], pair2[0], "boooop");
+
+    const tx4 = await initializeMessage(account_chats[0], pair2[0], "boooop");
+
+    const tx5 = await initializeMessage(account_chats[0], pair2[0], "boooop");
+
+    const tx6 = await initializeMessage(account_chats[0], pair2[0], "boooop");
+    
+    const messages = await getMessagesByChat(account_chats[0]);
+
+    console.log(messages);
 
     /*
 

@@ -145,7 +145,7 @@ impl Message {
 
 #[account]
 pub struct Message {
-    message: String,       //221 max
+    message: String,       //209 max
     initializer:Pubkey,    //32
     bump: u8,              //1
 }
