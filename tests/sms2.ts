@@ -159,7 +159,10 @@ describe("sms2", () => {
       try{
         let messagePDA = await GetPDAMessage(chatAccount.masterId, i);
         let messageData = await program.account.message.fetch(messagePDA);
-        data.push(messageData);
+        data.push({
+          PDA:messagePDA,
+          data:messageData,
+        });
       }
       catch{
         continue;
@@ -258,13 +261,7 @@ describe("sms2", () => {
 
     //Get messages from the chat
     const messages = await getMessagesByChat(user1_first_chat);
-
-
-    const chatAccount = await program.account.chat.fetch(user1_first_chat);
-    console.log(chatAccount);
-
-    const chatAccount2 = await program.account.chat.fetch(user2_first_chat);
-    console.log(chatAccount);
+    console.log(messages);
 
     const tx4 = await program.methods.closeChat()
     .accounts(
@@ -276,7 +273,15 @@ describe("sms2", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
       },
     ).signers([user1]).rpc();
-    
+
+    const tx5 = await program.methods.closeMessage()
+    .accounts(
+      {
+        message: messages[1].PDA,
+        initializer: user1.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    ).signers([user1]).rpc();
 
   });
 });

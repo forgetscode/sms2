@@ -35,7 +35,7 @@ pub mod sms2 {
         Ok(())
     }
 
-    pub fn initialize_message(ctx: Context<InitializeMessage>, _master_id:Pubkey, _message_id:u8,  text:String) -> Result<()> {
+    pub fn initialize_message(ctx: Context<InitializeMessage>, master_id:Pubkey, message_id:u8,  text:String) -> Result<()> {
         let message = &mut ctx.accounts.message;
         let chat_initializer = &mut ctx.accounts.chat_initializer;
         let chat_receiver = &mut ctx.accounts.chat_receiver;
@@ -50,12 +50,20 @@ pub mod sms2 {
 
         message.message = text;
 
+        message.master_id = master_id;
+
+        message.message_id = message_id;
+
         message.bump = *ctx.bumps.get("message").unwrap();
 
         Ok(())
     }
 
-    pub fn close_chat(ctx: Context<CloseChat>) -> Result<()> {
+    pub fn close_chat(_ctx: Context<CloseChat>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn close_message(_ctx: Context<CloseMessage>) -> Result<()> {
         Ok(())
     }
 
@@ -164,6 +172,21 @@ pub struct CloseChat<'info>  {
     pub system_program: Program<'info, System>
 }
 
+#[derive(Accounts)]
+pub struct CloseMessage<'info>  {
+    #[account(
+        mut,
+        constraint = message.initializer.key() == initializer.key(),
+        close = initializer,
+        seeds = [b"message",  message.master_id.as_ref(), message.message_id.to_le_bytes().as_ref()],
+        bump = message.bump
+    )]
+    pub message: Account<'info, Message>,
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    pub system_program: Program<'info, System>
+}
+
 impl Message {
     fn space(text: &str) -> usize {
         // discriminator
@@ -171,9 +194,9 @@ impl Message {
         // String
         4 + text.len() +
         //Pubkey
-        32 +
+        32 + 32 +
         // u8
-        1
+        1 + 1
     }
 }
 
@@ -181,6 +204,8 @@ impl Message {
 pub struct Message {
     message: String,       //209 max
     initializer:Pubkey,    //32
+    master_id: Pubkey,     //32
+    message_id: u8,        //1
     bump: u8,              //1
 }
 
