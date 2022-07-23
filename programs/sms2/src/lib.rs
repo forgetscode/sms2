@@ -54,6 +54,11 @@ pub mod sms2 {
 
         Ok(())
     }
+
+    pub fn close_chat(ctx: Context<CloseChat>) -> Result<()> {
+        Ok(())
+    }
+
 }
 
 #[derive(Accounts)]
@@ -128,6 +133,35 @@ pub struct Chat {          //8
     other_chat_id: u8,     //1
     message_count: u8,     //1
     bump:u8,               //1
+}
+
+#[derive(Accounts)]
+pub struct CloseChat<'info>  {
+    #[account(
+        mut,
+        constraint = initializer.key() == chat_initializer.initializer.key() || 
+        initializer.key() == chat_initializer.receiver.key(),
+        constraint = chat_initializer.initializer.key() == receiver.key(),
+        close = receiver,
+        seeds = [b"chat_initializer", chat_initializer.initializer.key().as_ref(), chat_initializer.chat_id.to_le_bytes().as_ref()], 
+        bump = chat_initializer.bump,
+    )]
+    pub chat_initializer: Account<'info, Chat>,
+    #[account(
+        mut,
+        constraint = initializer.key() == chat_receiver.initializer.key() || 
+        initializer.key() == chat_receiver.receiver.key(),
+        constraint = chat_receiver.initializer.key() == receiver.key(),
+        close = receiver,
+        seeds = [b"chat_receiver", chat_receiver.receiver.key().as_ref(), chat_receiver.chat_id.to_le_bytes().as_ref()], 
+        bump = chat_receiver.bump
+    )]
+    pub chat_receiver: Account<'info, Chat>,
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    #[account(mut)]
+    pub receiver: SystemAccount<'info>,
+    pub system_program: Program<'info, System>
 }
 
 impl Message {

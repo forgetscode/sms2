@@ -259,7 +259,24 @@ describe("sms2", () => {
     //Get messages from the chat
     const messages = await getMessagesByChat(user1_first_chat);
 
-    console.log(messages);
+
+    const chatAccount = await program.account.chat.fetch(user1_first_chat);
+    console.log(chatAccount);
+
+    const chatAccount2 = await program.account.chat.fetch(user2_first_chat);
+    console.log(chatAccount);
+
+    const tx4 = await program.methods.closeChat()
+    .accounts(
+      {
+        chatInitializer: user1_first_chat,
+        chatReceiver: user2_first_chat,
+        initializer: user1.publicKey,
+        receiver: user1.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    ).signers([user1]).rpc();
+    
 
   });
 });
